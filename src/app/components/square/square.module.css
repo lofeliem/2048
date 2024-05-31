@@ -1,0 +1,19 @@
+.square {
+    width: 175px;
+    height: 175px;
+    box-sizing: border-box;
+    border: solid 10px black;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* .square:nth-child(1) {
+    width: 175px;
+    height: 175px;
+    box-sizing: border-box;
+    border-right: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+} */
