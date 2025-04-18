@@ -52,6 +52,7 @@ button {
   font-weight: bold;
   border-radius: 5px;
   color: #776e65;
+  transition: transform 0.3s ease;
 }
 
 .game-over {
@@ -94,4 +95,3 @@ button {
 .cell-512  { background-color: #edc850; color: white; }
 .cell-1024 { background-color: #edc53f; color: white; }
 .cell-2048 { background-color: #edc22e; color: white; }
-  

@@ -1,15 +1,3 @@
-// if ("serviceWorker" in navigator) {
-//     window.addEventListener("load", () => {
-//       navigator.serviceWorker.register("service-worker.js")
-//         .then((reg) => {
-//           console.log("Service Worker registered ✅", reg);
-//         })
-//         .catch((err) => {
-//           console.error("Service Worker registration failed ❌", err);
-//         });
-//     });
-//   }
-
 let board = [
     [0, 0, 0, 0],
     [0, 0, 0, 0],
@@ -18,7 +6,7 @@ let board = [
   ]
 
 let score = 0
-
+let newCell = null
 // 移动端触屏移动
 let touchStartX = 0;
 let touchStartY = 0;
@@ -87,6 +75,8 @@ function generateRandom() {
 // 从空格子中随机找到一个格子，有90%的概率是2，10%概率是4
   const { r, c } = emptyCells[Math.floor(Math.random() * emptyCells.length)]
   board[r][c] = Math.random() < 0.9 ? 2 : 4
+
+  newCell = {r, c}
 }
 
 function updateBoardView() {
@@ -101,6 +91,7 @@ function updateBoardView() {
       if (val !== 0) {
         cell.textContent = val
         cell.classList.add("cell-" + val)
+        cell.id = `cell-${r}-${c}`
       }
       container.appendChild(cell)
     }
@@ -151,6 +142,7 @@ function moveLeft() {
     row = row.filter(val => val !== 0) // 再去一次 0
     while (row.length < 4) row.push(0)
     if (!arraysEqual(board[r], row)) {
+      animateCellMove(r, 0, 1, 1)
       board[r] = row
       moved = true
     }
@@ -242,3 +234,8 @@ function isGameOver() {
   }
   
   
+function animateCellMove(fx, fy, tx, ty) {
+    const cell = document.querySelector(`cell${fx}${fy}`)
+    // 获取当前cell的宽度
+    if (!cell) return
+}
