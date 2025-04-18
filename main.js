@@ -10,7 +10,10 @@ let score = 0
 // 主程序
 window.onload = () => {
   init()
-  document.getElementById("restart-btn").onclick = init
+  document.getElementById("retry-btn").onclick = () => {
+    hideGameOver();
+    init();
+  };
   // 监听方向键
   document.addEventListener("keydown", handleKeyPress)
 };
@@ -22,7 +25,7 @@ function init() {
       board[r][c] = 0
     }
   }
-
+// 开局生成两个数字
   generateRandom()
   generateRandom()
   updateBoardView()
@@ -30,6 +33,7 @@ function init() {
 
 function generateRandom() {
   const emptyCells = []
+// 寻找空格子   
   for (let r = 0; r < 4; r++) {
     for (let c = 0; c < 4; c++) {
       if (board[r][c] === 0) {
@@ -37,9 +41,9 @@ function generateRandom() {
       }
     }
   }
-
+// 如果没有空帖子了，不生成新的数字
   if (emptyCells.length === 0) return
-
+// 从空格子中随机找到一个格子，有90%的概率是2，10%概率是4
   const { r, c } = emptyCells[Math.floor(Math.random() * emptyCells.length)]
   board[r][c] = Math.random() < 0.9 ? 2 : 4
 }
@@ -85,6 +89,9 @@ function handleKeyPress(e) {
   if (moved) {
     generateRandom()
     updateBoardView()
+    if (isGameOver()) {
+        showGameOver();
+      }
   }
 }
 
@@ -109,7 +116,7 @@ function moveLeft() {
   }
   return moved
 }
-
+// 判断是否移动了，外层取反
 function arraysEqual(a, b) {
   return a.length === b.length && a.every((val, idx) => val === b[idx])
 }
@@ -120,11 +127,7 @@ function moveRight() {
   return moved
 }
 
-function rotateRows() {
-  for (let r = 0; r < 4; r++) {
-    board[r].reverse()
-  }
-}
+
 function moveUp() {
   transpose()
   const moved = moveLeft()
@@ -141,6 +144,13 @@ function moveDown() {
   return moved
 }
 
+// 倒置每一行
+function rotateRows() {
+  for (let r = 0; r < 4; r++) {
+    board[r].reverse()
+  }
+}
+// 矩阵转换
 function transpose() {
   let newBoard = [
     [0, 0, 0, 0],
@@ -155,5 +165,39 @@ function transpose() {
   }
   board = newBoard
 }
+
+function isGameOver() {
+    // 有空格，游戏还没结束
+    for (let r = 0; r < 4; r++) {
+      for (let c = 0; c < 4; c++) {
+        if (board[r][c] === 0) return false;
+      }
+    }
+  
+    // 检查是否还能合并（横向）
+    for (let r = 0; r < 4; r++) {
+      for (let c = 0; c < 3; c++) {
+        if (board[r][c] === board[r][c + 1]) return false;
+      }
+    }
+  
+    // 检查是否还能合并（纵向）
+    for (let c = 0; c < 4; c++) {
+      for (let r = 0; r < 3; r++) {
+        if (board[r][c] === board[r + 1][c]) return false;
+      }
+    }
+  
+    return true; // 没空格也不能合并了 → 游戏结束
+  }
+  
+
+  function showGameOver() {
+    document.getElementById("game-over").classList.remove("hidden");
+  }
+  
+  function hideGameOver() {
+    document.getElementById("game-over").classList.add("hidden");
+  }
   
   
