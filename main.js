@@ -7,6 +7,35 @@ let board = [
 
 let score = 0
 
+// 移动端触屏移动
+let touchStartX = 0;
+let touchStartY = 0;
+
+document.addEventListener("touchstart", (e) => {
+  if (e.touches.length > 0) {
+    touchStartX = e.touches[0].clientX
+    touchStartY = e.touches[0].clientY
+  }
+});
+
+document.addEventListener("touchend", (e) => {
+  if (e.changedTouches.length > 0) {
+    const deltaX = e.changedTouches[0].clientX - touchStartX
+    const deltaY = e.changedTouches[0].clientY - touchStartY
+
+    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+      // 横向滑动
+      if (deltaX > 30) handleKeyPress({ key: "ArrowRight" })
+      else if (deltaX < -30) handleKeyPress({ key: "ArrowLeft" })
+    } else {
+      // 纵向滑动
+      if (deltaY > 30) handleKeyPress({ key: "ArrowDown" })
+      else if (deltaY < -30) handleKeyPress({ key: "ArrowUp" })
+    }
+  }
+})
+
+
 // 主程序
 window.onload = () => {
   init()
