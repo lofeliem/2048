@@ -169,7 +169,6 @@ function moveLeft() {
     row = row.filter(val => val !== 0) // 再去一次 0
     while (row.length < 4) row.push(0)
     if (!arraysEqual(board[r], row)) {
-      animateCellMove(r, 0, 1, 1)
       board[r] = row
       moved = true
     }
@@ -259,10 +258,3 @@ function isGameOver() {
   function hideGameOver() {
     document.getElementById("game-over").classList.add("hidden");
   }
-  
-  
-function animateCellMove(fx, fy, tx, ty) {
-    const cell = document.querySelector(`cell-${fx}-${fy}`)
-    // 获取当前cell的宽度
-    if (!cell) return
-}
