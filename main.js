@@ -5,8 +5,12 @@ let board = [
     [0, 0, 0, 0],
   ]
 
+let isInit = true
 let score = 0
-let newCell = null
+// 新生成的格子，之所以是数组是因为游戏初始化需要两个新格子
+let newCell = []
+// 要合并的格子集合
+let mergedCells = []
 // 移动端触屏移动
 let touchStartX = 0;
 let touchStartY = 0;
@@ -40,14 +44,18 @@ document.addEventListener("touchend", (e) => {
 window.onload = () => {
   init()
   document.getElementById("retry-btn").onclick = () => {
-    hideGameOver();
-    init();
+    hideGameOver()
+    init()
+  }
+  document.getElementById("restart-btn").onclick = () => {
+    init()
   };
   // 监听方向键
   document.addEventListener("keydown", handleKeyPress)
 };
   
 function init() {
+  isInit = true
   score = 0
   for (let r = 0; r < 4; r++) {
     for (let c = 0; c < 4; c++) {
@@ -58,6 +66,7 @@ function init() {
   generateRandom()
   generateRandom()
   updateBoardView()
+  isInit = false
 }
 
 function generateRandom() {
@@ -74,9 +83,10 @@ function generateRandom() {
   if (emptyCells.length === 0) return
 // 从空格子中随机找到一个格子，有90%的概率是2，10%概率是4
   const { r, c } = emptyCells[Math.floor(Math.random() * emptyCells.length)]
-  board[r][c] = Math.random() < 0.9 ? 2 : 4
+  console.log('inint', isInit)
+  board[r][c] = isInit ? 2 : (Math.random() < 0.9 ? 2 : 4)
 
-  newCell = {r, c}
+  newCell.push({r, c})
 }
 
 function updateBoardView() {
@@ -92,12 +102,27 @@ function updateBoardView() {
         cell.textContent = val
         cell.classList.add("cell-" + val)
         cell.id = `cell-${r}-${c}`
+
+        // 遍历新格子数组，给予动画class
+        newCell.forEach((cl) => {
+            if (cl && cl.r === r && cl.c === c) {
+                cell.classList.add('new')
+            }
+        })
+        // 渲染前判断当前这个格子是不是新合并成的格子
+        if (mergedCells.some(pos => pos.r === r && pos.c === c)) {
+            cell.classList.add('merged')
+        }
+        
       }
       container.appendChild(cell)
     }
   }
 
   document.getElementById("score").textContent = score
+  // 视图更新后重置记录数组
+  newCell = []
+  mergedCells = []
 }
 
 function handleKeyPress(e) {
@@ -131,11 +156,13 @@ function moveLeft() {
   let moved = false
   for (let r = 0; r < 4; r++) {
     let row = board[r].filter(val => val !== 0) // 去掉 0
-    for (let i = 0; i < row.length - 1; i++) {
-      if (row[i] === row[i + 1]) {
-        row[i] *= 2
-        score += row[i]
-        row[i + 1] = 0
+    for (let c = 0; c < row.length - 1; c++) {
+      if (row[c] === row[c + 1]) {
+        row[c] *= 2
+        score += row[c]
+        row[c + 1] = 0
+        // 合并集合增加当前左边的格子
+        mergedCells.push({r, c})
         moved = true
       }
     }
@@ -235,7 +262,7 @@ function isGameOver() {
   
   
 function animateCellMove(fx, fy, tx, ty) {
-    const cell = document.querySelector(`cell${fx}${fy}`)
+    const cell = document.querySelector(`cell-${fx}-${fy}`)
     // 获取当前cell的宽度
     if (!cell) return
 }

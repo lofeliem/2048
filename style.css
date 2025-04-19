@@ -54,6 +54,37 @@ button {
   color: #776e65;
   transition: transform 0.3s ease;
 }
+.new {
+  animation:pop 0.3s ease;
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.merged {
+  animation: mergePop 0.25s ease;
+}
+
+@keyframes mergePop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
 
 .game-over {
   position: absolute;
