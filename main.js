@@ -11,6 +11,9 @@ let score = 0
 let newCell = []
 // 要合并的格子集合
 let mergedCells = []
+
+let moveAnimations = []
+
 // 移动端触屏移动
 let touchStartX = 0;
 let touchStartY = 0;
@@ -92,36 +95,95 @@ function updateBoardView() {
   const container = document.getElementById("grid-container")
   container.innerHTML = ""
 
-  for (let r = 0; r < 4; r++) {
-    for (let c = 0; c < 4; c++) {
-      const val = board[r][c]
-      const cell = document.createElement("div")
-      cell.className = "cell"
-      if (val !== 0) {
+  // === 添加动画块 ===
+  moveAnimations.forEach(({ from, to }) => {
+    const val = board[to.r][to.c] // 目标位置上的值
+    const cell = document.createElement("div")
+    cell.className = `cell cell-${val}`
+    cell.textContent = val
+
+    const fromPos = getCellPosition(from.r, from.c)
+    const toPos = getCellPosition(to.r, to.c)
+
+    cell.style.top = fromPos.top
+    cell.style.left = fromPos.left
+
+    // 强制触发一次布局重绘（让 transition 生效）
+    requestAnimationFrame(() => {
+      cell.style.top = toPos.top
+      cell.style.left = toPos.left
+    })
+
+    container.appendChild(cell)
+  })
+
+  // 等待动画结束后更新最终视图（静态格子）
+  setTimeout(() => {
+    container.innerHTML = ""
+
+    for (let r = 0; r < 4; r++) {
+      for (let c = 0; c < 4; c++) {
+        const val = board[r][c]
+        if (val === 0) continue
+
+        const cell = document.createElement("div")
+        cell.className = `cell cell-${val}`
         cell.textContent = val
-        cell.classList.add("cell-" + val)
-        cell.id = `cell-${r}-${c}`
 
-        // 遍历新格子数组，给予动画class
-        newCell.forEach((cl) => {
-            if (cl && cl.r === r && cl.c === c) {
-                cell.classList.add('new')
-            }
-        })
-        // 渲染前判断当前这个格子是不是新合并成的格子
-        if (mergedCells.some(pos => pos.r === r && pos.c === c)) {
-            cell.classList.add('merged')
+        const pos = getCellPosition(r, c)
+        cell.style.top = pos.top
+        cell.style.left = pos.left
+
+        // 新生成动画
+        if (newCell && newCell.r === r && newCell.c === c) {
+          cell.classList.add("new")
         }
-        
-      }
-      container.appendChild(cell)
-    }
-  }
 
-  document.getElementById("score").textContent = score
-  // 视图更新后重置记录数组
-  newCell = []
-  mergedCells = []
+        // 合并动画
+        if (mergedCells.some(pos => pos.r === r && pos.c === c)) {
+          cell.classList.add("merged")
+        }
+
+        container.appendChild(cell)
+      }
+    }
+
+    moveAnimations = []
+    mergedCells = []
+    newCell = []
+
+    document.getElementById("score").textContent = score
+  }, 200)
+
+//   for (let r = 0; r < 4; r++) {
+//     for (let c = 0; c < 4; c++) {
+//       const val = board[r][c]
+//       const cell = document.createElement("div")
+//       cell.className = "cell"
+//       if (val !== 0) {
+//         cell.textContent = val
+//         cell.classList.add("cell-" + val)
+//         cell.id = `cell-${r}-${c}`
+//         // 遍历新格子数组，给予动画class
+//         newCell.forEach((cl) => {
+//             if (cl && cl.r === r && cl.c === c) {
+//                 cell.classList.add('new')
+//             }
+//         })
+//         // 渲染前判断当前这个格子是不是新合并成的格子
+//         if (mergedCells.some(pos => pos.r === r && pos.c === c)) {
+//             cell.classList.add('merged')
+//         }
+        
+//       }
+//       container.appendChild(cell)
+//     }
+//   }
+
+//   document.getElementById("score").textContent = score
+//   // 视图更新后重置记录数组
+//   newCell = []
+//   mergedCells = []
 }
 
 function handleKeyPress(e) {
@@ -153,24 +215,51 @@ function handleKeyPress(e) {
 
 function moveCells() {
   let moved = false
+  moveAnimations = []
   for (let r = 0; r < 4; r++) {
-    let row = board[r].filter(val => val !== 0) // 去掉 0
-    for (let c = 0; c < row.length - 1; c++) {
-      if (row[c] === row[c + 1]) {
-        row[c] *= 2
-        score += row[c]
-        row[c + 1] = 0
-        // 合并集合增加当前左边的格子
-        mergedCells.push({r, c})
-        moved = true
-      }
+    // let row = board[r].filter(val => val !== 0) // 去掉 0
+    let currentRow = board[r]
+    let newRow = [0,0,0,0]
+    let lastMergedIndex = -1
+    let targetCol = 0
+    for (let c = 0; c < 4; c++) {
+        if(currentRow[c] === 0) continue
+        let value = currentRow[c]
+        let movedCol = targetCol
+
+        if (
+            movedCol > 0 && 
+            newRow[movedCol - 1] === value && 
+            lastMergedIndex !== movedCol - 1
+        ) {
+            newRow[movedCol - 1] *= 2
+            score += newRow[movedCol - 1]
+            lastMergedIndex = movedCol - 1
+            mergedCells.push({ r, c: movedCol - 1})
+            moveAnimations.push({
+                from: {r, c},
+                to: {r, c: movedCol - 1}
+            })
+            moved = true
+        } else {
+            newRow[movedCol] = value
+            if(c !== movedCol) {
+                moveAnimations.push({
+                    from: {r, c},
+                    to: {r, c: movedCol}
+                })
+                moved = true
+            }
+            targetCol++
+        }
     }
-    row = row.filter(val => val !== 0) // 再去一次 0
-    while (row.length < 4) row.push(0)
-    if (!arraysEqual(board[r], row)) {
-      board[r] = row
-      moved = true
-    }
+    // row = row.filter(val => val !== 0) // 再去一次 0
+    // while (row.length < 4) row.push(0)
+    // if (!arraysEqual(board[r], row)) {
+    //   board[r] = row
+    //   moved = true
+    // }
+    board[r] = newRow
   }
   return moved
 }
@@ -254,7 +343,15 @@ function isGameOver() {
   return true; // 没空格也不能合并了 → 游戏结束
 }
   
-
+function getCellPosition(r, c) {
+    const size = 25;  // 每个格子占25%的宽高（含间距）
+    const gap = 2.5;  // 每个间隙是2.5%
+    return {
+      top: r * size + gap + "%",
+      left: c * size + gap + "%",
+    }
+}
+  
 function showGameOver() {
   document.getElementById("game-over").classList.remove("hidden");
 }
