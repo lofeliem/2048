@@ -319,7 +319,4 @@ function updateBoardView() {
 }
 ```
 
-#### 平滑移动效果
-
-
 
