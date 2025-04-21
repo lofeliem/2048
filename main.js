@@ -83,7 +83,6 @@ function generateRandom() {
   if (emptyCells.length === 0) return
   // 从空格子中随机找到一个格子，有90%的概率是2，10%概率是4
   const { r, c } = emptyCells[Math.floor(Math.random() * emptyCells.length)]
-  console.log('inint', isInit)
   board[r][c] = isInit ? 2 : (Math.random() < 0.9 ? 2 : 4)
 
   newCell.push({r, c})
@@ -152,7 +151,7 @@ function handleKeyPress(e) {
   }
 }
 
-function moveLeft() {
+function moveCells() {
   let moved = false
   for (let r = 0; r < 4; r++) {
     let row = board[r].filter(val => val !== 0) // 去掉 0
@@ -179,9 +178,14 @@ function moveLeft() {
 function arraysEqual(a, b) {
   return a.length === b.length && a.every((val, idx) => val === b[idx])
 }
+
+function moveLeft() {
+    return moveCells()
+}
+
 function moveRight() {
   rotateRows() // 反转每一行
-  const moved = moveLeft()
+  const moved = moveCells()
   rotateRows() // 再次反转回来
   return moved
 }
@@ -189,7 +193,7 @@ function moveRight() {
 
 function moveUp() {
   transpose()
-  const moved = moveLeft()
+  const moved = moveCells()
   transpose()
   return moved
 }
@@ -197,7 +201,7 @@ function moveUp() {
 function moveDown() {
   transpose()
   rotateRows()
-  const moved = moveLeft()
+  const moved = moveCells()
   rotateRows()
   transpose()
   return moved
