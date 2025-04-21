@@ -204,13 +204,120 @@ function isGameOver() {
 
 ### 动画逻辑
 
+动画逻辑主要是补充三点
+>1. 新生成格子放大效果
+>2. 格子合并放大效果
+>3. 格子平滑移动效果
+
 #### 新生成格子的出现效果
 
 在随机生成新数字函数内标记新生成的格子的坐标，在后面渲染视图的时候添加上对应的动画效果，使用数组存储坐标对象，是因为游戏初始化会有两个新的格子。
 
+对应的步骤为
+1. 补充放大效果样式
+2. 找出哪些是新增的格子
+3. 渲染时加上对应的样式
+
+##### 1.补充放大效果样式
+```css
+.cell {
+    transition: transform .3s ease;
+}
+
+.new {
+    animation: pop .3s ease;
+}
+
+@keyframe pop {
+    0% {
+        transform: scale(0)
+    }
+    50% {
+        transform: scale(1.1)
+    }
+    100% {
+        transform: scale(1)
+    }
+}
+```
+
+##### 2.找出哪些是新增的格子
+
+`generateRandom`在代码里承担的就是生成随机新格子的任务，因此我们在这个函数里标记新格子的位置即可
+
+```js
+function generateRandom (){
+    // ......
+
+    newCells.push({r, c})
+}
+```
+
+##### 3.渲染时加上对应的样式
+
+然后在视图渲染的时候，遍历`newCells`中的数据，逐一加上`.new`
+
+```js
+function updateBoardView() {
+    // .......
+    newCells.forEach((cl) => {
+        if (cl && cl.r === r && cl.c === c) {
+            cell.classList.add('new')
+        }
+    })
+}
+```
+
 #### 两个格子合并的合并放大效果
 
+同样的也是分为三步
+1. 补充合并的样式
+2. 找出哪些格子是合并而来的
+3. 渲染时增加对应的样式
 
+##### 1.补充合并的样式
+
+```css
+.merged {
+  animation: mergePop 0.25s ease;
+}
+
+@keyframes mergePop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+```
+
+##### 2.找出哪些格子是合并而来的
+
+由于合并格子相关逻辑处理是在`moveCells`中处理，我们在该函数中记录即可
+
+```js
+function moveCells() {
+    // ......
+    mergedCells.push({r, c})
+}
+```
+
+##### 3.渲染时增加对应的样式
+
+最后在视图渲染`updateBoardView`中进行样式添加
+
+```js
+function updateBoardView() {
+    // ......
+    if (mergedCells.some(pos => pos.r === r && pos.c === c)) {
+        cell.classList.add('merged')
+    }
+}
+```
 
 #### 平滑移动效果
 
