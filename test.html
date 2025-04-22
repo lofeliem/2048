@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2048 Game</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 0;
+      padding: 20px;
+      background: #faf8ef;
+    }
+
+    #game-container {
+      position: relative;
+      width: 400px;
+      height: 400px;
+      background: #bbada0;
+      border-radius: 6px;
+      margin-bottom: 20px;
+    }
+
+    .grid-background {
+      display: grid;
+      grid-template: repeat(4, 1fr) / repeat(4, 1fr);
+      gap: 10px;
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+    }
+
+    .grid-cell {
+      background: rgba(238, 228, 218, 0.35);
+      border-radius: 4px;
+    }
+
+    .tile {
+      position: absolute;
+      width: 90px;
+      height: 90px;
+      font-size: 40px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      transition: top 0.2s ease, left 0.2s ease, transform 0.2s ease;
+      z-index: 1;
+    }
+
+    .tile.new {
+      animation: pop 0.3s ease;
+    }
+
+    .tile.merged {
+      animation: merge 0.2s ease;
+    }
+
+    @keyframes pop {
+      0% { transform: scale(0); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes merge {
+      0% { transform: scale(1.2); }
+      100% { transform: scale(1); }
+    }
+
+    #status-text {
+      font-size: 24px;
+      margin: 10px 0;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    /* Tile colors */
+    .tile--2 { background: #eee4da; color: #776e65; }
+    .tile--4 { background: #ede0c8; color: #776e65; }
+    .tile--8 { background: #f2b179; color: #f9f6f2; }
+    .tile--16 { background: #f59563; color: #f9f6f2; }
+    .tile--32 { background: #f67c5f; color: #f9f6f2; }
+    .tile--64 { background: #f65e3b; color: #f9f6f2; }
+    .tile--128 { background: #edcf72; color: #f9f6f2; }
+    .tile--256 { background: #edcc61; color: #f9f6f2; }
+    .tile--512 { background: #edc850; color: #f9f6f2; }
+    .tile--1024 { background: #edc53f; color: #f9f6f2; }
+    .tile--2048 { background: #edc22e; color: #f9f6f2; }
+  </style>
+</head>
+<body>
+  <h1>2048 Game</h1>
+  <div id="game-container">
+    <div class="grid-background">
+      <div class="grid-cell"></div>
+      <div class="grid-cell"></div>
+      <div class="grid-cell"></div>
+      <div class="grid-cell"></div>
+      <div class="grid-cell"></div>
+      <div class="grid-cell"></div>
+      <div class="grid-cell"></div>
+      <div class="grid-cell"></div>
+      <div class="grid-cell"></div>
+      <div class="grid-cell"></div>
+      <div class="grid-cell"></div>
+      <div class="grid-cell"></div>
+      <div class="grid-cell"></div>
+      <div class="grid-cell"></div>
+      <div class="grid-cell"></div>
+      <div class="grid-cell"></div>
+    </div>
+  </div>
+  <div id="status-text"></div>
+  <button onclick="game.restart()">Restart</button>
+
+  <script type="module">
+    class Grid {
+      constructor(size = 4) {
+        this.size = size;
+        this.cells = this.createEmptyGrid();
+      }
+
+      createEmptyGrid() {
+        return Array.from({ length: this.size }, () => Array(this.size).fill(null));
+      }
+
+      getEmptyCells() {
+        const empty = [];
+        for (let r = 0; r < this.size; r++) {
+          for (let c = 0; c < this.size; c++) {
+            if (!this.cells[r][c]) empty.push({ x: c, y: r });
+          }
+        }
+        return empty;
+      }
+
+      setTile(x, y, tile) {
+        this.cells[y][x] = tile;
+      }
+
+      getTile(x, y) {
+        if (x < 0 || x >= this.size || y < 0 || y >= this.size) return null;
+        return this.cells[y][x];
+      }
+
+      removeTile(x, y) {
+        this.cells[y][x] = null;
+      }
+
+      moveTile(fromX, fromY, toX, toY) {
+        const tile = this.getTile(fromX, fromY);
+        this.setTile(toX, toY, tile);
+        this.removeTile(fromX, fromY);
+      }
+
+      forEachCell(callback) {
+        for (let r = 0; r < this.size; r++) {
+          for (let c = 0; c < this.size; c++) {
+            callback(c, r, this.cells[r][c]);
+          }
+        }
+      }
+    }
+
+    class Tile {
+      constructor(x, y, value, container) {
+        this.x = x;
+        this.y = y;
+        this.value = value;
+        this.container = container;
+        this.merged = false;
+
+        this.element = document.createElement('div');
+        this.element.className = 'tile new';
+        this.element.textContent = value;
+        this.updateStyle();
+        this.container.appendChild(this.element);
+        this.updatePosition();
+      }
+
+      getColorClass(value) {
+        return `tile--${value}`;
+      }
+
+      updateStyle() {
+        this.element.className = 'tile new';
+        this.element.classList.add(this.getColorClass(this.value));
+      }
+
+      updatePosition() {
+        this.element.style.left = `${this.x * 100 + 10}px`;
+        this.element.style.top = `${this.y * 100 + 10}px`;
+      }
+
+      moveTo(newX, newY) {
+        this.x = newX;
+        this.y = newY;
+        this.updatePosition();
+      }
+
+      mergeWith(otherTile) {
+        this.value *= 2;
+        this.element.textContent = this.value;
+        this.element.classList.add('merged');
+        this.updateStyle();
+        this.merged = true;
+        otherTile.remove();
+      }
+
+      resetAnimation() {
+        this.element.classList.remove('merged', 'new');
+      }
+
+      remove() {
+        this.container.removeChild(this.element);
+      }
+    }
+
+    class Game {
+      constructor(container) {
+        this.container = container;
+        this.grid = new Grid();
+        this.tiles = [];
+        this.running = true;
+        this.setup();
+      }
+
+      setup() {
+        this.container.querySelectorAll('.tile').forEach(el => el.remove());
+        this.grid = new Grid();
+        this.tiles = [];
+        this.running = true;
+        this.addRandomTile();
+        this.addRandomTile();
+      }
+
+      restart() {
+        this.setup();
+        document.getElementById('status-text').textContent = '';
+      }
+
+      addRandomTile() {
+        const empty = this.grid.getEmptyCells();
+        if (empty.length === 0) return;
+        const spot = empty[Math.floor(Math.random() * empty.length)];
+        const tile = new Tile(spot.x, spot.y, Math.random() < 0.9 ? 2 : 4, this.container);
+        this.grid.setTile(spot.x, spot.y, tile);
+        this.tiles.push(tile);
+      }
+
+      move(dx, dy) {
+        if (!this.running) return;
+        let moved = false;
+        const order = this.getTraversalOrder(dx, dy);
+        this.tiles.forEach(t => t.merged = false);
+
+        for (const { x, y } of order) {
+          const tile = this.grid.getTile(x, y);
+          if (!tile) continue;
+          let newX = x, newY = y;
+          while (true) {
+            const nextX = newX + dx;
+            const nextY = newY + dy;
+            if (!this.inBounds(nextX, nextY)) break;
+            const nextTile = this.grid.getTile(nextX, nextY);
+            if (!nextTile) {
+              newX = nextX;
+              newY = nextY;
+            } else if (!nextTile.merged && nextTile.value === tile.value) {
+              tile.mergeWith(nextTile);
+              this.grid.removeTile(nextX, nextY);
+              this.tiles = this.tiles.filter(t => t !== nextTile);
+              newX = nextX;
+              newY = nextY;
+              moved = true;
+              break;
+            } else break;
+          }
+          if (newX !== x || newY !== y) {
+            this.grid.moveTile(x, y, newX, newY);
+            tile.moveTo(newX, newY);
+            moved = true;
+          }
+        }
+
+        this.tiles.forEach(t => t.resetAnimation());
+        if (moved) {
+          setTimeout(() => {
+            this.addRandomTile();
+            this.checkGameStatus();
+          }, 150);
+        }
+      }
+
+      inBounds(x, y) {
+        return x >= 0 && x < 4 && y >= 0 && y < 4;
+      }
+
+      getTraversalOrder(dx, dy) {
+        const range = [0, 1, 2, 3];
+        const orderX = dx > 0 ? range.slice().reverse() : range;
+        const orderY = dy > 0 ? range.slice().reverse() : range;
+        const cells = [];
+        for (let y of orderY) {
+          for (let x of orderX) {
+            cells.push({ x, y });
+          }
+        }
+        return cells;
+      }
+
+      checkGameStatus() {
+        for (let tile of this.tiles) {
+          if (tile.value === 2048) {
+            this.running = false;
+            document.getElementById('status-text').textContent = '🎉 你赢了！';
+            return;
+          }
+        }
+        const empty = this.grid.getEmptyCells();
+        if (empty.length > 0) return;
+        for (let y = 0; y < 4; y++) {
+          for (let x = 0; x < 4; x++) {
+            const tile = this.grid.getTile(x, y);
+            for (let [dx, dy] of [[1, 0], [0, 1]]) {
+              const neighbor = this.grid.getTile(x + dx, y + dy);
+              if (neighbor && neighbor.value === tile.value) return;
+            }
+          }
+        }
+        this.running = false;
+        document.getElementById('status-text').textContent = '💀 游戏结束';
+      }
+    }
+
+    const game = new Game(document.getElementById('game-container'));
+
+    window.addEventListener('keydown', e => {
+      const map = {
+        ArrowUp: [0, -1],
+        ArrowDown: [0, 1],
+        ArrowLeft: [-1, 0],
+        ArrowRight: [1, 0]
+      };
+      if (map[e.key]) {
+        e.preventDefault();
+        game.move(...map[e.key]);
+      }
+    });
+
+    window.game = game;
+  </script>
+</body>
+</html>
