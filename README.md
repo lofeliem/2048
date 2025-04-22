@@ -319,4 +319,5 @@ function updateBoardView() {
 }
 ```
 
-
+![alt text](picture/gamepicture.png)
+![alt text](picture/gameover.png)
